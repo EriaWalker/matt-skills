@@ -1,88 +1,110 @@
 ---
 name: triage
-description: Manage GitHub Issues through the Countries development lifecycle from ready-for-agent to verified. Use when selecting agent-ready work, claiming an issue, recording implementation, coordinating behavior verification and human code review, requesting revisions, completing verification, or auditing lifecycle-label consistency. Also maintain non-lifecycle descriptive labels such as bug or enhancement without treating them as workflow states.
+description: Triage Terra GitHub issues and move them through the Terra delivery lifecycle.
+disable-model-invocation: true
 ---
 
-# Countries Issue Lifecycle
+# Triage
 
-Manage Issues in the repository named by `Docs/project/issue-tracker.md`. Read `Docs/project/triage-labels.md` before changing labels.
+Triage GitHub issues for Terra. Do not use external pull requests as a triage surface.
 
-## Lifecycle labels
+Read these project rules before changing an issue:
 
-Use these labels as controlled workflow state:
+- `Docs/project/issue-tracker.md`
+- `Docs/project/triage-labels.md`
+- `Docs/project/agent-domain.md`
+- [AGENT-BRIEF.md](AGENT-BRIEF.md)
 
-1. `ready-for-agent` — fully specified and available for an AFK agent.
-2. `agent-in-progress` — an AI agent is executing the PRD; implementation is incomplete.
-3. `implemented-unverified` — implementation is complete and awaits verification.
-4. `behavior-verified` — black-box behavior matches expectations.
-5. `code-reviewed` — a human reviewed the code; final verification is pending.
-6. `needs-revision` — implementation requires changes before acceptance.
-7. `verified` — verification is complete and the work is accepted.
+Use concise, factual comments. Do not add a fixed AI disclaimer. Do not create or write `.out-of-scope/`.
 
-Treat `behavior-verified` and `code-reviewed` as parallel gates that may coexist. Treat every other lifecycle label as mutually exclusive with them and with each other.
+## Labels and lifecycle
 
-## Descriptive labels
+Every triaged issue has exactly one category label: `bug` or `enhancement`. Category labels coexist with one lifecycle label and supplemental labels.
 
-Treat all other labels as supplemental metadata, never as lifecycle state. They may describe issue type, impact, scope, difficulty, ownership, or collaboration needs. The set changes over time, so query the tracker instead of hard-coding a closed vocabulary.
+Use the Terra lifecycle:
 
-Known examples include `bug`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, and `wontfix`.
+```text
+needs-triage or needs-info
+  -> ready-for-agent
+  -> agent-in-progress
+  -> implemented-unverified
+  -> behavior-verified + code-reviewed
+  -> verified
+```
 
-Do not remove descriptive labels during a lifecycle transition unless the user explicitly requests it or a label is demonstrably contradictory. In particular, `wontfix` is descriptive in this system and is not one of the development-cycle states.
+- `needs-triage` — initial evaluation is needed.
+- `needs-info` — required information is missing. Move it back to `needs-triage` after a useful reply.
+- `ready-for-agent` — fully specified and safe for an AFK agent.
+- `agent-in-progress` — an agent has claimed the work.
+- `implemented-unverified` — implementation exists but needs verification.
+- `behavior-verified` and `code-reviewed` — both are required before `verified`.
+- `ready-for-human` — an inbound or manual exit for work that requires a person.
+- `wontfix` — record the reason, add the label, and close the issue.
 
-## Workflow
+Remove obsolete lifecycle labels when applying the next state. Ask before an unusual transition or when the issue has conflicting lifecycle labels.
 
-1. Read the Issue body, comments, current labels, and linked PRD or evidence.
-2. Identify its current lifecycle state and preserve relevant descriptive labels.
-3. Check that the requested transition is supported by evidence.
-4. State the proposed label removals, additions, comments, and close/reopen action before mutating GitHub.
-5. Apply the transition with the issue-tracker workflow.
-6. Re-read the Issue and report the resulting labels as verification.
+## Wayfinding
 
-Never infer that implementation, verification, review, or acceptance occurred merely from code or label age. Require explicit evidence from the current task, test results, reviewer statement, or maintainer instruction.
+A `wayfinder:map` issue is a planning map. Keep it out of the delivery lifecycle.
 
-## Transitions
+Create executable AFK decision tickets as GitHub sub-issues. Give each child one `wayfinder:<type>` label (`research`, `prototype`, `grilling`, or `task`) plus its required category label.
 
-- Claim work: `ready-for-agent` -> `agent-in-progress`.
-- Finish implementation: `agent-in-progress` -> `implemented-unverified`.
-- Record black-box verification: `implemented-unverified` -> `behavior-verified`.
-- Record human code review: `implemented-unverified` -> `code-reviewed`.
-- When one verification gate already exists, add the other without removing the first.
-- Accept only after both `behavior-verified` and `code-reviewed` exist: remove both and add `verified`.
-- Request changes from `implemented-unverified`, `behavior-verified`, or `code-reviewed`: remove active verification labels and add `needs-revision`.
-- Resume revision work: `needs-revision` -> `agent-in-progress`.
-- Return a prematurely claimed Issue: `agent-in-progress` -> `ready-for-agent` only on explicit instruction.
+- Only executable AFK tickets enter `ready-for-agent` and the normal Terra lifecycle.
+- `grilling` and `prototype` tickets that require human input close as `decision resolved`; do not force them through implementation and verification.
+- You may create `wayfinder:*` labels, sub-issue relationships, and documented blocking relationships when the Wayfinder workflow requires them.
 
-Do not skip intermediate evidence gates unless the maintainer explicitly overrides the workflow. Flag unexpected or conflicting lifecycle labels before changing anything.
+## Process
 
-## Common operations
+### 1. Show attention
 
-### Show available work
+Query GitHub Issues and show these buckets, oldest first:
 
-List open Issues labeled `ready-for-agent`, oldest first. Summarize the PRD, dependencies, and relevant descriptive labels. Do not claim one until instructed.
+1. Unlabeled issues.
+2. `needs-triage` issues.
+3. `needs-info` issues with new reporter activity.
+4. Issues that block a ready item.
 
-### Claim an Issue
+Show the category, lifecycle state, and a one-line summary. Let the maintainer choose an item.
 
-Confirm it is `ready-for-agent`, add `agent-in-progress`, and remove `ready-for-agent`. Comment only when requested or when the repository workflow requires an execution note.
+### 2. Gather evidence
 
-### Record implementation
+Read the issue body, comments, labels, author, and dates. Read prior triage notes before asking again. Explore the codebase using the domain docs and relevant ADRs.
 
-Require implementation evidence and proportionate test results. Replace `agent-in-progress` with `implemented-unverified`. Do not claim behavior verification or human review.
+Check whether the requested behavior already exists. Report the code locations and evidence. For a bug, reproduce the reported steps when possible. Report confirmed, disproved, or insufficient detail.
 
-### Record verification or review
+### 3. Recommend and decide
 
-For `behavior-verified`, cite black-box evidence. For `code-reviewed`, require an explicit human review outcome. Preserve the other gate when present. If both gates are present, report that the Issue is eligible for `verified`; do not mark it accepted without maintainer instruction.
+Recommend one category and one lifecycle outcome. Explain the relevant codebase context and evidence. Wait for maintainer direction before applying a non-trivial outcome.
 
-### Mark verified
+Use `/grilling` and `/domain-modeling` one question at a time when the issue needs decisions. Preserve resolved decisions in the issue brief and appropriate domain docs.
 
-Require both verification gates or an explicit maintainer override. Replace active lifecycle labels with `verified`. Close the Issue only when explicitly requested or when its PRD states that verified Issues are closed.
+### 4. Apply the outcome
 
-### Audit lifecycle labels
+- `ready-for-agent` — post an agent brief and apply the label.
+- `ready-for-human` — post the same structure, state why human work is required, and apply the label.
+- `needs-info` — post specific, actionable unanswered questions.
+- `wontfix` — state the reason, apply the label, and close the issue.
+- `implemented-unverified` — record the implementation commit and verification still required.
+- `verified` — require behavior evidence and `code-reviewed` before applying it.
 
-List open Issues carrying lifecycle labels. Report invalid combinations, missing stages, stale `agent-in-progress` work, and evidence gaps. Do not repair them without instruction.
+When implementation completes, retain Terra Commit Report rules. Record a `Feat Commit Report — <commit SHA>` or `Correction Commit Report — <commit SHA>` with scope, verification results, and remaining debt or follow-up.
 
-## Safety
+## Quick overrides
 
-- Treat GitHub label changes, comments, and closing as external mutations.
-- Do not create, rename, or delete repository labels unless explicitly requested.
-- Do not treat external pull requests as the request surface unless `Docs/project/issue-tracker.md` says otherwise.
-- Keep Issue comments concise and factual; distinguish observed evidence from inference.
+When the maintainer gives an explicit state change, confirm the labels, comment, and close action, then apply it. Do not start a grilling session unless they ask for one.
+
+## Needs-info template
+
+```markdown
+## Triage Notes
+
+**What we established:**
+
+- point 1
+
+**What we still need from you (@reporter):**
+
+- specific question
+```
+
+When resuming, read existing triage notes, identify newly answered questions, and do not re-ask resolved questions.
