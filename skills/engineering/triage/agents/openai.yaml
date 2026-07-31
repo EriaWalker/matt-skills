@@ -1,0 +1,4 @@
+interface:
+  display_name: "Countries Issue Lifecycle"
+  short_description: "Manage Issues from agent-ready through verified"
+  default_prompt: "Use $triage to inspect and advance this Countries Issue through its development lifecycle."
